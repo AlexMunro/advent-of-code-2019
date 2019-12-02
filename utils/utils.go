@@ -31,6 +31,32 @@ func GetInputInts(filename string) []int {
 	return ints
 }
 
+// GetInputSingleString retrieves input from a file and
+// returns it as a single string
+func GetInputSingleString(filename string) string {
+	data, errors := ioutil.ReadFile(filename)
+	if errors != nil {
+		panic(errors)
+	}
+	return string(data)
+}
+
+// GetCommaSeparatedInts retrieves a slice of ints where
+// these are all given on one line
+func GetCommaSeparatedInts(filename string) []int {
+	intStrings := strings.Split(GetInputSingleString(filename), ",")
+	ints := make([]int, 0, len(intStrings))
+
+	for _, s := range intStrings {
+		n, errors := strconv.Atoi(s)
+		if errors != nil {
+			panic(errors)
+		}
+		ints = append (ints, n)
+	}
+	return ints
+}
+
 // Sum adds all the values in xs together
 func Sum(xs []int) int {
 	sum := 0
@@ -38,4 +64,11 @@ func Sum(xs []int) int {
 		sum += x
 	}
 	return sum
+}
+
+// CopyInts creates and returns a copy of a slice of ints
+func CopyInts(xs []int) []int {
+	xsCopy := make([]int, len(xs))
+	copy(xsCopy, xs)
+	return xsCopy
 }

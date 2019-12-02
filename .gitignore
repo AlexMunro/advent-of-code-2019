@@ -10,3 +10,9 @@
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
+
+# Editor stuff
+.vscode
+
+# Ignoring personal inputs provided by Advent of Code
+*input.txt

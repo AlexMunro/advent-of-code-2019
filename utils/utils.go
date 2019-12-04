@@ -66,9 +66,28 @@ func Sum(xs []int) int {
 	return sum
 }
 
+// Min of an int slice
+func Min(xs []int) int {
+	min := xs[0]
+	for _, x := range xs {
+		if min > x {
+			min = x
+		}
+	}
+	return min
+}
+
 // CopyInts creates and returns a copy of a slice of ints
 func CopyInts(xs []int) []int {
 	xsCopy := make([]int, len(xs))
 	copy(xsCopy, xs)
 	return xsCopy
+}
+
+// Abs value of n (remove any negative sign)
+func Abs(n int) int {
+	if n < 0 {
+		return - n
+	}
+	return n
 }

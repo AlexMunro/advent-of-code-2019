@@ -1,4 +1,4 @@
-package main
+package intcode
 
 import (
 	"reflect"
@@ -16,7 +16,7 @@ func TestExecuteProgram(t *testing.T) {
 
 	for k, v := range examples {
 		result := utils.CopyInts(*k)
-		executeProgram(result)
+		ExecuteProgram(result, []int{})
 		if !(reflect.DeepEqual(result, v)) {
 			t.Errorf("Expected to get %v from %v but got %v", v, *k, result)
 		}

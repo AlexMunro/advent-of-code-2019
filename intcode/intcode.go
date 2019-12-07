@@ -2,28 +2,27 @@ package intcode
 
 import (
 	"fmt"
-	"math"
 )
 
-func numInputs(opcode int) int {
+func readParams(opcode int) int {
 	switch opcode {
-	case 1, 2:
+	case 1, 2, 5, 6, 7, 8:
 		return 2
 	case 3:
-		return 1
-	case 4:
 		return 0
+	case 4:
+		return 1
 	default:
 		panic(fmt.Sprintf("Opcode %d not recognised", opcode))
-	}	
+	}
 }
 
 // is this YAGNI? I dunno, it feels neater
-func numOutputs(opcode int) int {
+func writeParams(opcode int) int {
 	switch opcode {
-	case 1, 2, 4:
+	case 1, 2, 3, 7, 8:
 		return 1
-	case 3:
+	case 4, 5, 6:
 		return 0
 	default:
 		panic(fmt.Sprintf("Opcode %d not recognised", opcode))
@@ -36,30 +35,34 @@ func getParams(registers []int, pos int) []int {
 	params := []int{}
 	opcode := registers[pos] % 100
 
-	// fmt.Printf("Getting params starting from pos %d in %v\n", pos, registers)
+	for i := 0; i < readParams(opcode); i++ {
+		mode := registers[pos] / 100
+		for j := 0; j < i; j++ {
+			mode /= 10
+		}
+		mode = mode % 10
+		value := registers[pos+1+i]
 
-	for i:= 0; i < numInputs(opcode); i++ {
-		mode := opcode / int(math.Pow(10, float64(2 + i)))
-		value := registers[pos + 1 + i]
-		// fmt.Printf("Mode: %d with value %d", mode, value)
 		switch mode {
 		case 0: // position mode
 			params = append(params, registers[value])
-			// fmt.Printf(" is %d\n", registers[value])
 		case 1: // immediate mode
-			params = append(params, value)
-			// fmt.Printf(" is %d\n", value)
+			if value > 0 {
+				params = append(params, value)
+			} else {
+				params = append(params, value)
+			}
 		default:
 			panic(fmt.Sprintf("Mode %d not recognised\n", mode))
 		}
 	}
 
 	// The outputs register values are effectively always in immediate mode
-	for i:= 0; i < numOutputs(opcode); i++{
-		params = append(params, registers[pos + numInputs(opcode) + 1 + i])
+	for i := 0; i < writeParams(opcode); i++ {
+		params = append(params, registers[pos+readParams(opcode)+1+i])
 	}
 
-	// fmt.Printf("Executing instr %d with params %v\n", opcode, params)
+	// fmt.Printf(" with params %v\n", params)
 	return params
 }
 
@@ -68,8 +71,8 @@ func ExecuteProgram(registers []int, input []int) []int {
 	i := 0
 	outputs := []int{}
 
-	for i < len(registers) && registers[i] % 100 != 99 {
-		// fmt.Printf("Processing instruction %d\n", i)
+	for i < len(registers) && registers[i]%100 != 99 {
+
 		opcode := registers[i] % 100
 		params := getParams(registers, i)
 
@@ -82,9 +85,31 @@ func ExecuteProgram(registers []int, input []int) []int {
 			registers[params[0]] = input[0]
 		case 4:
 			outputs = append(outputs, params[0])
+		case 5:
+			if params[0] != 0 {
+				i = params[1]
+				continue
+			}
+		case 6:
+			if params[0] == 0 {
+				i = params[1]
+				continue
+			}
+		case 7:
+			if params[0] < params[1] {
+				registers[params[2]] = 1
+			} else {
+				registers[params[2]] = 0
+			}
+		case 8:
+			if params[0] == params[1] {
+				registers[params[2]] = 1
+			} else {
+				registers[params[2]] = 0
+			}
 		}
-		// fmt.Printf("Advancing by %d registers\n", numInputs(opcode) + 1)
-		i += (numInputs(opcode) + numOutputs(opcode) + 1)
+
+		i += (readParams(opcode) + writeParams(opcode) + 1)
 	}
 	return outputs
 }

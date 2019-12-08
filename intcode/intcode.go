@@ -61,13 +61,17 @@ func getParams(registers []int, pos int) []int {
 	for i := 0; i < writeParams(opcode); i++ {
 		params = append(params, registers[pos+readParams(opcode)+1+i])
 	}
-
-	// fmt.Printf(" with params %v\n", params)
 	return params
 }
 
 // ExecuteProgram and return its output. Will modify registers.
-func ExecuteProgram(registers []int, input []int) []int {
+// inChan is used to find inputs where input has been depleted if it is not nil.
+// outChan is used to write outputs if not nil. All outputs are also returned as a slice.
+func ExecuteProgram(registers []int, input []int, inChan <-chan int, outChan chan<- int) []int {
+	if outChan != nil {
+		defer close(outChan)
+	}
+
 	i := 0
 	outputs := []int{}
 
@@ -82,9 +86,19 @@ func ExecuteProgram(registers []int, input []int) []int {
 		case 2:
 			registers[params[2]] = params[1] * params[0]
 		case 3:
-			registers[params[0]] = input[0]
+			if len(input) > 0 {
+				registers[params[0]] = input[0]
+				input = input[1:]
+			} else if inChan != nil {
+				registers[params[0]] = <-inChan
+			} else {
+				panic("No further input available")
+			}
 		case 4:
 			outputs = append(outputs, params[0])
+			if outChan != nil {
+				outChan <- params[0]
+			}
 		case 5:
 			if params[0] != 0 {
 				i = params[1]

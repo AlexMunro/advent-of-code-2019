@@ -1,12 +1,11 @@
 package main
 
-import(
+import (
+	"fmt"
+
 	"../intcode"
 	"../utils"
-	"fmt"
 )
-
-
 
 func findNounAndVerb(registers []int, target int) (int, int) {
 	for noun := 0; noun < 100; noun++ {
@@ -14,7 +13,7 @@ func findNounAndVerb(registers []int, target int) (int, int) {
 			r := utils.CopyInts(registers)
 			r[1] = noun
 			r[2] = verb
-			intcode.ExecuteProgram(r, []int{})
+			intcode.ExecuteProgram(r, []int{}, nil, nil)
 
 			if r[0] == target {
 				return noun, verb
@@ -29,9 +28,9 @@ func main() {
 	registers1 := utils.CopyInts(registers)
 	registers1[1] = 12
 	registers1[2] = 2
-	intcode.ExecuteProgram(registers1, []int{})
+	intcode.ExecuteProgram(registers1, []int{}, nil, nil)
 	fmt.Printf("The answer to part one is %d\n", registers1[0])
 
 	noun, verb := findNounAndVerb(registers, 19690720)
-	fmt.Printf("The answer to part two is %d\n", (100 * noun) + verb)
+	fmt.Printf("The answer to part two is %d\n", (100*noun)+verb)
 }

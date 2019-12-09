@@ -52,7 +52,7 @@ func GetCommaSeparatedInts(filename string) []int {
 		if errors != nil {
 			panic(errors)
 		}
-		ints = append (ints, n)
+		ints = append(ints, n)
 	}
 	return ints
 }
@@ -69,12 +69,23 @@ func Sum(xs []int) int {
 // Min of an int slice
 func Min(xs []int) int {
 	min := xs[0]
-	for _, x := range xs {
+	for _, x := range xs[1:] {
 		if min > x {
 			min = x
 		}
 	}
 	return min
+}
+
+// Max of an int slice
+func Max(xs []int) int {
+	max := xs[0]
+	for _, x := range xs[1:] {
+		if max < x {
+			max = x
+		}
+	}
+	return max
 }
 
 // CopyInts creates and returns a copy of a slice of ints
@@ -87,7 +98,7 @@ func CopyInts(xs []int) []int {
 // Abs value of n (remove any negative sign)
 func Abs(n int) int {
 	if n < 0 {
-		return - n
+		return -n
 	}
 	return n
 }

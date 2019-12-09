@@ -2,6 +2,7 @@ package intcode
 
 import (
 	"reflect"
+	"strconv"
 	"sync"
 	"testing"
 
@@ -43,7 +44,7 @@ func TestInputOutputProgram(t *testing.T) {
 	examples := []testCase{
 		{beforeRegisters: []int{103, 1, 99, 19}, inputs: []int{1234}, afterRegisters: []int{103, 1234, 99, 19}, outputs: []int{}},
 		{beforeRegisters: []int{104, 583, 99, 19}, afterRegisters: []int{104, 583, 99, 19}, outputs: []int{583}},
-		{beforeRegisters: []int{3, 0, 4, 0, 99}, afterRegisters: []int{3, 0, 4, -27, 99}, inputs: []int{-27}, outputs: []int{-27}},
+		{beforeRegisters: []int{3, 0, 4, 0, 99}, afterRegisters: []int{-27, 0, 4, 0, 99}, inputs: []int{-27}, outputs: []int{-27}},
 	}
 
 	for _, tc := range examples {
@@ -159,4 +160,54 @@ func TestConcurrentProgram(t *testing.T) {
 			t.Errorf("Expected to get %d but got %d", tc.result, result)
 		}
 	}
+}
+
+func TestRelativeModeProgram(t *testing.T) {
+	// This program should output itself
+	expected := []int{109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99}
+	registers := utils.CopyInts(expected)
+	result := ExecuteProgram(registers, []int{}, nil, nil)
+	if !reflect.DeepEqual(registers, result) {
+		t.Errorf("Expected %v to output itself but got %v", registers, result)
+	}
+
+	// This program should produce a 16 digit number
+	registers = []int{1102, 34915192, 34915192, 7, 4, 7, 99, 0}
+	result = ExecuteProgram(registers, []int{}, nil, nil)
+	if len(strconv.Itoa(result[0])) != 16 {
+		t.Errorf("Expected %v to output a 16 digit number but got %d", registers, result[0])
+	}
+
+	// This program should output its middle register
+	registers = []int{104, 1125899906842624, 99}
+	result = ExecuteProgram(registers, []int{}, nil, nil)
+	if !reflect.DeepEqual([]int{1125899906842624}, result) {
+		t.Errorf("Expected %v to output 1125899906842624 but got %d", registers, result)
+	}
+}
+
+func TestExtraTests(t *testing.T) {
+	examples := []testCase{
+		// Test cases thanks to:
+		// https://www.reddit.com/r/adventofcode/comments/e8aw9j/2019_day_9_part_1_how_to_fix_203_error/fac3294/
+		{beforeRegisters: []int{109, -1, 4, 1, 99}, inputs: []int{1}, outputs: []int{-1}},
+		{beforeRegisters: []int{109, -1, 104, 1, 99}, inputs: []int{1}, outputs: []int{1}},
+		{beforeRegisters: []int{109, -1, 204, 1, 99}, inputs: []int{1}, outputs: []int{109}},
+		{beforeRegisters: []int{109, 1, 9, 2, 204, -6, 99}, inputs: []int{1}, outputs: []int{204}},
+		{beforeRegisters: []int{109, 1, 109, 9, 204, -6, 99}, inputs: []int{1}, outputs: []int{204}},
+		{beforeRegisters: []int{109, 1, 209, -1, 204, -106, 99}, inputs: []int{1}, outputs: []int{204}},
+		{beforeRegisters: []int{109, 1, 3, 3, 204, 2, 99}, inputs: []int{1234}, outputs: []int{1234}},
+		{beforeRegisters: []int{109, 1, 203, 2, 204, 2, 99}, inputs: []int{4321}, outputs: []int{4321}},
+
+		// and one last one, home-made
+		{beforeRegisters: []int{9, 1, 1207, 1, 9, 7, 104, 0, 99}, inputs: []int{}, outputs: []int{1}},
+	}
+
+	for _, tc := range examples {
+		outputs := ExecuteProgram(tc.beforeRegisters, tc.inputs, nil, nil)
+		if !(reflect.DeepEqual(outputs, tc.outputs)) {
+			t.Errorf("Expected to get outputs %v but got outputs %v", tc.outputs, outputs)
+		}
+	}
+
 }

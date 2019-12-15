@@ -8,6 +8,46 @@ func Gradient(l1, l2 Location) float64 {
 	return float64(l1.Y-l2.Y) / float64(l1.X-l2.X)
 }
 
+func MinX(locations []Location) int {
+	minX := locations[0].X
+	for _, loc := range locations {
+		if minX > loc.X {
+			minX = loc.X
+		}
+	}
+	return minX
+}
+
+func MaxX(locations []Location) int {
+	maxX := locations[0].X
+	for _, loc := range locations {
+		if maxX < loc.X {
+			maxX = loc.X
+		}
+	}
+	return maxX
+}
+
+func MinY(locations []Location) int {
+	minY := locations[0].Y
+	for _, loc := range locations {
+		if minY > loc.Y {
+			minY = loc.Y
+		}
+	}
+	return minY
+}
+
+func MaxY(locations []Location) int {
+	maxY := locations[0].Y
+	for _, loc := range locations {
+		if maxY < loc.Y {
+			maxY = loc.Y
+		}
+	}
+	return maxY
+}
+
 type LocationSet struct {
 	contents map[Location]struct{}
 }

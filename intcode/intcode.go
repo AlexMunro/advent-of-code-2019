@@ -101,9 +101,14 @@ func getParams(registers *registerMap, pos, relativeBase int) []int {
 // ExecuteProgram and return its output. Will modify registers.
 // inChan is used to find inputs where input has been depleted if it is not nil.
 // outChan is used to write outputs if not nil. All outputs are also returned as a slice.
-func ExecuteProgram(registerArray []int, input []int, inChan <-chan int, outChan chan<- int) []int {
+// statusChan is used to signal to other processes that this intcode computer is waiting for input
+func ExecuteProgram(registerArray []int, input []int, inChan <-chan int, outChan chan<- int, statusChan chan<- bool) []int {
 	if outChan != nil {
 		defer close(outChan)
+	}
+
+	if statusChan != nil {
+		defer close(statusChan)
 	}
 
 	registers := new(registerArray)
@@ -126,6 +131,9 @@ func ExecuteProgram(registerArray []int, input []int, inChan <-chan int, outChan
 				registers.set(params[0], input[0])
 				input = input[1:]
 			} else if inChan != nil {
+				if statusChan != nil {
+					statusChan <- true
+				}
 				registers.set(params[0], <-inChan)
 			} else {
 				panic("No further input available")

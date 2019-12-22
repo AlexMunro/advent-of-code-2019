@@ -35,7 +35,7 @@ func intersectionPoints(path1, path2 string) []location {
 		switch dir {
 		case 'L':
 			for i := 0; i < dist; i++ {
-				getOrCreateIntSet(points, x - i).Add(y)
+				getOrCreateIntSet(points, x-i).Add(y)
 			}
 			x -= dist
 		case 'R':
@@ -67,7 +67,7 @@ func intersectionPoints(path1, path2 string) []location {
 		switch dir {
 		case 'L':
 			for i := 0; i < dist; i++ {
-				if points[x - i].Contains(y) {
+				if points[x-i].Contains(y) {
 					intersections = append(intersections, location{x - i, y})
 					// fmt.Printf("Adding %d, %d\n", x, y)
 				}
@@ -75,7 +75,7 @@ func intersectionPoints(path1, path2 string) []location {
 			x -= dist
 		case 'R':
 			for i := 0; i < dist; i++ {
-				if points[x + i].Contains(y) {
+				if points[x+i].Contains(y) {
 					intersections = append(intersections, location{x + i, y})
 					// fmt.Printf("Adding %d, %d\n", x, y)
 				}
@@ -127,24 +127,24 @@ func stepsToPoint(path string, point location) int {
 		dir := segment[0]
 		dist, _ := strconv.Atoi(segment[1:])
 
-		switch(dir){
+		switch dir {
 		case 'L':
-			if point.y == y && point.x < x && point.x >= x - dist {
+			if point.y == y && point.x < x && point.x >= x-dist {
 				return steps - point.x + x
 			}
 			x -= dist
 		case 'R':
-			if point.y == y && point.x > x && point.x <= x + dist {
+			if point.y == y && point.x > x && point.x <= x+dist {
 				return steps + point.x - x
 			}
 			x += dist
 		case 'D':
-			if point.x == x && point.y < y && point.y >= y - dist {
+			if point.x == x && point.y < y && point.y >= y-dist {
 				return steps - point.y + y
 			}
 			y -= dist
 		case 'U':
-			if point.x == x && point.y > y && point.y <= y + dist {
+			if point.x == x && point.y > y && point.y <= y+dist {
 				return steps + point.y - y
 			}
 			y += dist

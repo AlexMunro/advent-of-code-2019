@@ -33,7 +33,7 @@ func TestAdditionMultiplicationProgram(t *testing.T) {
 
 	for _, tc := range examples {
 		afterRegisters := utils.CopyInts(tc.beforeRegisters)
-		ExecuteProgram(afterRegisters, tc.inputs, nil, nil)
+		ExecuteProgram(afterRegisters, tc.inputs, nil, nil, nil)
 		if !(reflect.DeepEqual(afterRegisters, tc.afterRegisters)) {
 			t.Errorf("Expected to get %v from %v but got %v", tc.afterRegisters, tc.beforeRegisters, afterRegisters)
 		}
@@ -49,7 +49,7 @@ func TestInputOutputProgram(t *testing.T) {
 
 	for _, tc := range examples {
 		afterRegisters := utils.CopyInts(tc.beforeRegisters)
-		outputs := ExecuteProgram(afterRegisters, tc.inputs, nil, nil)
+		outputs := ExecuteProgram(afterRegisters, tc.inputs, nil, nil, nil)
 		if !(reflect.DeepEqual(afterRegisters, tc.afterRegisters)) || !(reflect.DeepEqual(outputs, tc.outputs)) {
 			t.Errorf("Expected to get %v with outputs %v from %v with inputs %v but got %v with outputs %v",
 				tc.afterRegisters, tc.outputs, tc.beforeRegisters, tc.inputs, afterRegisters, outputs)
@@ -84,7 +84,7 @@ func TestConditionalProgramming(t *testing.T) {
 
 	for _, tc := range examples {
 		afterRegisters := utils.CopyInts(tc.beforeRegisters)
-		outputs := ExecuteProgram(afterRegisters, tc.inputs, nil, nil)
+		outputs := ExecuteProgram(afterRegisters, tc.inputs, nil, nil, nil)
 		if !(reflect.DeepEqual(outputs, tc.outputs)) {
 			t.Errorf("Expected to get outputs %v from %v with inputs %v but got %v with outputs %v",
 				tc.afterRegisters, tc.beforeRegisters, tc.inputs, afterRegisters, outputs)
@@ -100,7 +100,7 @@ func TestMixedOpProgram(t *testing.T) {
 
 	for _, tc := range examples {
 		afterRegisters := utils.CopyInts(tc.beforeRegisters)
-		outputs := ExecuteProgram(afterRegisters, tc.inputs, nil, nil)
+		outputs := ExecuteProgram(afterRegisters, tc.inputs, nil, nil, nil)
 		if !(reflect.DeepEqual(afterRegisters, tc.afterRegisters)) || !(reflect.DeepEqual(outputs, tc.outputs)) {
 			t.Errorf("Expected to get %v with outputs %v from %v with inputs %v but got %v with outputs %v",
 				tc.afterRegisters, tc.outputs, tc.beforeRegisters, tc.inputs, afterRegisters, outputs)
@@ -148,7 +148,7 @@ func TestConcurrentProgram(t *testing.T) {
 				if i < len(tc.inputs)-1 { // The last process will write once after the others have finished
 					defer wg.Done()
 				}
-				ExecuteProgram(r, input, channels[i], channels[(i+1)%len(channels)])
+				ExecuteProgram(r, input, channels[i], channels[(i+1)%len(channels)], nil)
 			}(i, tc.inputs[i], r)
 		}
 
@@ -166,21 +166,21 @@ func TestRelativeModeProgram(t *testing.T) {
 	// This program should output itself
 	expected := []int{109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99}
 	registers := utils.CopyInts(expected)
-	result := ExecuteProgram(registers, []int{}, nil, nil)
+	result := ExecuteProgram(registers, []int{}, nil, nil, nil)
 	if !reflect.DeepEqual(registers, result) {
 		t.Errorf("Expected %v to output itself but got %v", registers, result)
 	}
 
 	// This program should produce a 16 digit number
 	registers = []int{1102, 34915192, 34915192, 7, 4, 7, 99, 0}
-	result = ExecuteProgram(registers, []int{}, nil, nil)
+	result = ExecuteProgram(registers, []int{}, nil, nil, nil)
 	if len(strconv.Itoa(result[0])) != 16 {
 		t.Errorf("Expected %v to output a 16 digit number but got %d", registers, result[0])
 	}
 
 	// This program should output its middle register
 	registers = []int{104, 1125899906842624, 99}
-	result = ExecuteProgram(registers, []int{}, nil, nil)
+	result = ExecuteProgram(registers, []int{}, nil, nil, nil)
 	if !reflect.DeepEqual([]int{1125899906842624}, result) {
 		t.Errorf("Expected %v to output 1125899906842624 but got %d", registers, result)
 	}
@@ -198,13 +198,10 @@ func TestExtraTests(t *testing.T) {
 		{beforeRegisters: []int{109, 1, 209, -1, 204, -106, 99}, inputs: []int{1}, outputs: []int{204}},
 		{beforeRegisters: []int{109, 1, 3, 3, 204, 2, 99}, inputs: []int{1234}, outputs: []int{1234}},
 		{beforeRegisters: []int{109, 1, 203, 2, 204, 2, 99}, inputs: []int{4321}, outputs: []int{4321}},
-
-		// and one last one, home-made
-		{beforeRegisters: []int{9, 1, 1207, 1, 9, 7, 104, 0, 99}, inputs: []int{}, outputs: []int{1}},
 	}
 
 	for _, tc := range examples {
-		outputs := ExecuteProgram(tc.beforeRegisters, tc.inputs, nil, nil)
+		outputs := ExecuteProgram(tc.beforeRegisters, tc.inputs, nil, nil, nil)
 		if !(reflect.DeepEqual(outputs, tc.outputs)) {
 			t.Errorf("Expected to get outputs %v but got outputs %v", tc.outputs, outputs)
 		}

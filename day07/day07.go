@@ -36,7 +36,7 @@ func execute(ordering []int, registers []int) int {
 	signal := 0
 	for _, phase := range ordering {
 		r := utils.CopyInts(registers)
-		output := intcode.ExecuteProgram(r, []int{phase, signal}, nil, nil)
+		output := intcode.ExecuteProgram(r, []int{phase, signal}, nil, nil, nil)
 		signal = output[len(output)-1]
 	}
 	return signal
@@ -61,7 +61,7 @@ func executeLooping(phases []int, registers []int) int {
 			if i < len(phases)-1 { // The last process will write once after the others have finished
 				defer wg.Done()
 			}
-			intcode.ExecuteProgram(r, initialInput, channels[i], channels[(i+1)%len(channels)])
+			intcode.ExecuteProgram(r, initialInput, channels[i], channels[(i+1)%len(channels)], nil)
 		}(i, phase, r)
 	}
 	wg.Wait()

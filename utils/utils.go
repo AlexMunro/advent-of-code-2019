@@ -2,6 +2,7 @@ package utils
 
 import (
 	"io/ioutil"
+	"math"
 	"strconv"
 	"strings"
 )
@@ -101,4 +102,9 @@ func Abs(n int) int {
 		return -n
 	}
 	return n
+}
+
+// CeilDiv float divides n by divisor and returns the ceiling
+func CeilDiv(n, divisor int) int {
+	return int(math.Ceil(float64(n) / float64(divisor)))
 }

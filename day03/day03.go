@@ -69,7 +69,6 @@ func intersectionPoints(path1, path2 string) []location {
 			for i := 0; i < dist; i++ {
 				if points[x-i].Contains(y) {
 					intersections = append(intersections, location{x - i, y})
-					// fmt.Printf("Adding %d, %d\n", x, y)
 				}
 			}
 			x -= dist
@@ -77,7 +76,6 @@ func intersectionPoints(path1, path2 string) []location {
 			for i := 0; i < dist; i++ {
 				if points[x+i].Contains(y) {
 					intersections = append(intersections, location{x + i, y})
-					// fmt.Printf("Adding %d, %d\n", x, y)
 				}
 			}
 			x += dist
@@ -85,7 +83,6 @@ func intersectionPoints(path1, path2 string) []location {
 			for i := 0; i < dist; i++ {
 				if points[x].Contains(y - i) {
 					intersections = append(intersections, location{x, y - i})
-					// fmt.Printf("Adding %d, %d\n", x, y)/
 				}
 			}
 			y -= dist
@@ -93,7 +90,6 @@ func intersectionPoints(path1, path2 string) []location {
 			for i := 0; i < dist; i++ {
 				if points[x].Contains(y + i) {
 					intersections = append(intersections, location{x, y + i})
-					// fmt.Printf("Adding %d, %d\n", x, y)/
 				}
 			}
 			y += dist

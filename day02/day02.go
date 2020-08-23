@@ -13,9 +13,9 @@ func findNounAndVerb(registers []int, target int) (int, int) {
 			r := utils.CopyInts(registers)
 			r[1] = noun
 			r[2] = verb
-			intcode.ExecuteProgram(r, []int{}, nil, nil, nil)
+			_, comp := intcode.ExecuteProgram(r, []int{}, intcode.Channels{})
 
-			if r[0] == target {
+			if comp.Registers[0] == target {
 				return noun, verb
 			}
 		}
@@ -28,8 +28,8 @@ func main() {
 	registers1 := utils.CopyInts(registers)
 	registers1[1] = 12
 	registers1[2] = 2
-	intcode.ExecuteProgram(registers1, []int{}, nil, nil, nil)
-	fmt.Printf("The answer to part one is %d\n", registers1[0])
+	_, comp1 := intcode.ExecuteProgram(registers1, []int{}, intcode.Channels{})
+	fmt.Printf("The answer to part one is %d\n", comp1.Registers[0])
 
 	noun, verb := findNounAndVerb(registers, 19690720)
 	fmt.Printf("The answer to part two is %d\n", (100*noun)+verb)

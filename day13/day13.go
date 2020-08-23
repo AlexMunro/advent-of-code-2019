@@ -39,7 +39,7 @@ func playGame(registers, program []int) int {
 	gameStatus := make(chan bool)
 
 	go func() {
-		intcode.ExecuteProgram(registers, nil, gameInput, gameOutput, gameStatus)
+		intcode.ExecuteProgram(registers, nil, intcode.Channels{gameInput, gameOutput, gameStatus, nil, nil, nil})
 	}()
 
 	var score, paddleX, ballX int
@@ -85,7 +85,7 @@ func main() {
 	// probably not necessary, but a headache I'd rather avoid
 	playRegisters := utils.CopyInts(testRegisters)
 
-	output := intcode.ExecuteProgram(testRegisters, program, nil, nil, nil)
+	output, _ := intcode.ExecuteProgram(testRegisters, program, intcode.Channels{nil, nil, nil, nil, nil, nil})
 	blocks := countBlocks(output)
 
 	fmt.Printf("The answer to part one is %d\n", blocks)

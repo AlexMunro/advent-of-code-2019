@@ -12,47 +12,47 @@ import (
 type testCase struct {
 	beforeRegisters []int
 	inputs          []int
-	afterRegisters  []int
+	afterRegisters  registerMap
 	outputs         []int
 }
 
 func TestAdditionMultiplicationProgram(t *testing.T) {
 	examples := []testCase{
 		// position mode
-		{beforeRegisters: []int{1, 0, 0, 0, 99}, afterRegisters: []int{2, 0, 0, 0, 99}},
-		{beforeRegisters: []int{2, 3, 0, 3, 99}, afterRegisters: []int{2, 3, 0, 6, 99}},
-		{beforeRegisters: []int{2, 4, 4, 5, 99, 0}, afterRegisters: []int{2, 4, 4, 5, 99, 9801}},
-		{beforeRegisters: []int{1, 1, 1, 4, 99, 5, 6, 0, 99}, afterRegisters: []int{30, 1, 1, 4, 2, 5, 6, 0, 99}},
+		{beforeRegisters: []int{1, 0, 0, 0, 99}, afterRegisters: registerMap{0: 2, 1: 0, 2: 0, 3: 0, 4: 99}},
+		{beforeRegisters: []int{2, 3, 0, 3, 99}, afterRegisters: registerMap{0: 2, 1: 3, 2: 0, 3: 6, 4: 99}},
+		{beforeRegisters: []int{2, 4, 4, 5, 99, 0}, afterRegisters: registerMap{0: 2, 1: 4, 2: 4, 3: 5, 4: 99, 5: 9801}},
+		{beforeRegisters: []int{1, 1, 1, 4, 99, 5, 6, 0, 99}, afterRegisters: registerMap{0: 30, 1: 1, 2: 1, 3: 4, 4: 2, 5: 5, 6: 6, 7: 0, 8: 99}},
 
 		// immediate mode
-		{beforeRegisters: []int{1002, 4, 3, 4, 33}, afterRegisters: []int{1002, 4, 3, 4, 99}},
-		{beforeRegisters: []int{11002, 4, 3, 4, 33}, afterRegisters: []int{11002, 4, 3, 4, 99}},
-		{beforeRegisters: []int{1101, 100, -1, 4, 0}, afterRegisters: []int{1101, 100, -1, 4, 99}},
-		{beforeRegisters: []int{1002, 4, -3, 5, 99, 48}, afterRegisters: []int{1002, 4, -3, 5, 99, -297}},
+		{beforeRegisters: []int{1002, 4, 3, 4, 33}, afterRegisters: registerMap{0: 1002, 1: 4, 2: 3, 3: 4, 4: 99}},
+		{beforeRegisters: []int{11002, 4, 3, 4, 33}, afterRegisters: registerMap{0: 11002, 1: 4, 2: 3, 3: 4, 4: 99}},
+		{beforeRegisters: []int{1101, 100, -1, 4, 0}, afterRegisters: registerMap{0: 1101, 1: 100, 2: -1, 3: 4, 4: 99}},
+		{beforeRegisters: []int{1002, 4, -3, 5, 99, 48}, afterRegisters: registerMap{0: 1002, 1: 4, 2: -3, 3: 5, 4: 99, 5: -297}},
 	}
 
 	for _, tc := range examples {
 		afterRegisters := utils.CopyInts(tc.beforeRegisters)
-		ExecuteProgram(afterRegisters, tc.inputs, nil, nil, nil)
-		if !(reflect.DeepEqual(afterRegisters, tc.afterRegisters)) {
-			t.Errorf("Expected to get %v from %v but got %v", tc.afterRegisters, tc.beforeRegisters, afterRegisters)
+		_, comp := ExecuteProgram(afterRegisters, tc.inputs, Channels{})
+		if !(reflect.DeepEqual(tc.afterRegisters, comp.Registers)) {
+			t.Errorf("Expected to get %v from %v but got %v", tc.afterRegisters, tc.beforeRegisters, comp.Registers)
 		}
 	}
 }
 
 func TestInputOutputProgram(t *testing.T) {
 	examples := []testCase{
-		{beforeRegisters: []int{103, 1, 99, 19}, inputs: []int{1234}, afterRegisters: []int{103, 1234, 99, 19}, outputs: []int{}},
-		{beforeRegisters: []int{104, 583, 99, 19}, afterRegisters: []int{104, 583, 99, 19}, outputs: []int{583}},
-		{beforeRegisters: []int{3, 0, 4, 0, 99}, afterRegisters: []int{-27, 0, 4, 0, 99}, inputs: []int{-27}, outputs: []int{-27}},
+		{beforeRegisters: []int{103, 1, 99, 19}, inputs: []int{1234}, afterRegisters: registerMap{0: 103, 1: 1234, 2: 99, 3: 19}, outputs: []int{}},
+		{beforeRegisters: []int{104, 583, 99, 19}, afterRegisters: registerMap{0: 104, 1: 583, 2: 99, 3: 19}, outputs: []int{583}},
+		{beforeRegisters: []int{3, 0, 4, 0, 99}, afterRegisters: registerMap{0: -27, 1: 0, 2: 4, 3: 0, 4: 99}, inputs: []int{-27}, outputs: []int{-27}},
 	}
 
 	for _, tc := range examples {
 		afterRegisters := utils.CopyInts(tc.beforeRegisters)
-		outputs := ExecuteProgram(afterRegisters, tc.inputs, nil, nil, nil)
-		if !(reflect.DeepEqual(afterRegisters, tc.afterRegisters)) || !(reflect.DeepEqual(outputs, tc.outputs)) {
+		outputs, comp := ExecuteProgram(afterRegisters, tc.inputs, Channels{})
+		if !(reflect.DeepEqual(comp.Registers, tc.afterRegisters)) || !(reflect.DeepEqual(outputs, tc.outputs)) {
 			t.Errorf("Expected to get %v with outputs %v from %v with inputs %v but got %v with outputs %v",
-				tc.afterRegisters, tc.outputs, tc.beforeRegisters, tc.inputs, afterRegisters, outputs)
+				tc.afterRegisters, tc.outputs, tc.beforeRegisters, tc.inputs, comp.Registers, outputs)
 		}
 	}
 }
@@ -84,7 +84,7 @@ func TestConditionalProgramming(t *testing.T) {
 
 	for _, tc := range examples {
 		afterRegisters := utils.CopyInts(tc.beforeRegisters)
-		outputs := ExecuteProgram(afterRegisters, tc.inputs, nil, nil, nil)
+		outputs, _ := ExecuteProgram(afterRegisters, tc.inputs, Channels{})
 		if !(reflect.DeepEqual(outputs, tc.outputs)) {
 			t.Errorf("Expected to get outputs %v from %v with inputs %v but got %v with outputs %v",
 				tc.afterRegisters, tc.beforeRegisters, tc.inputs, afterRegisters, outputs)
@@ -94,16 +94,15 @@ func TestConditionalProgramming(t *testing.T) {
 
 func TestMixedOpProgram(t *testing.T) {
 	examples := []testCase{
-		{beforeRegisters: []int{103, 1, 99, 19}, inputs: []int{1234}, afterRegisters: []int{103, 1234, 99, 19}, outputs: []int{}},
-		{beforeRegisters: []int{104, 583, 99, 19}, afterRegisters: []int{104, 583, 99, 19}, outputs: []int{583}},
+		{beforeRegisters: []int{103, 1, 99, 19}, inputs: []int{1234}, afterRegisters: registerMap{0: 103, 1: 1234, 2: 99, 3: 19}, outputs: []int{}},
+		{beforeRegisters: []int{104, 583, 99, 19}, afterRegisters: registerMap{0: 104, 1: 583, 2: 99, 3: 19}, outputs: []int{583}},
 	}
 
 	for _, tc := range examples {
-		afterRegisters := utils.CopyInts(tc.beforeRegisters)
-		outputs := ExecuteProgram(afterRegisters, tc.inputs, nil, nil, nil)
-		if !(reflect.DeepEqual(afterRegisters, tc.afterRegisters)) || !(reflect.DeepEqual(outputs, tc.outputs)) {
+		outputs, comp := ExecuteProgram(utils.CopyInts(tc.beforeRegisters), tc.inputs, Channels{})
+		if !(reflect.DeepEqual(tc.afterRegisters, comp.Registers)) || !(reflect.DeepEqual(outputs, tc.outputs)) {
 			t.Errorf("Expected to get %v with outputs %v from %v with inputs %v but got %v with outputs %v",
-				tc.afterRegisters, tc.outputs, tc.beforeRegisters, tc.inputs, afterRegisters, outputs)
+				tc.afterRegisters, tc.outputs, tc.beforeRegisters, tc.inputs, comp.Registers, outputs)
 		}
 	}
 }
@@ -148,7 +147,7 @@ func TestConcurrentProgram(t *testing.T) {
 				if i < len(tc.inputs)-1 { // The last process will write once after the others have finished
 					defer wg.Done()
 				}
-				ExecuteProgram(r, input, channels[i], channels[(i+1)%len(channels)], nil)
+				ExecuteProgram(r, input, Channels{Input: channels[i], Output: channels[(i+1)%len(channels)]})
 			}(i, tc.inputs[i], r)
 		}
 
@@ -166,27 +165,27 @@ func TestRelativeModeProgram(t *testing.T) {
 	// This program should output itself
 	expected := []int{109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99}
 	registers := utils.CopyInts(expected)
-	result := ExecuteProgram(registers, []int{}, nil, nil, nil)
+	result, _ := ExecuteProgram(registers, []int{}, Channels{})
 	if !reflect.DeepEqual(registers, result) {
 		t.Errorf("Expected %v to output itself but got %v", registers, result)
 	}
 
 	// This program should produce a 16 digit number
 	registers = []int{1102, 34915192, 34915192, 7, 4, 7, 99, 0}
-	result = ExecuteProgram(registers, []int{}, nil, nil, nil)
+	result, _ = ExecuteProgram(registers, []int{}, Channels{})
 	if len(strconv.Itoa(result[0])) != 16 {
 		t.Errorf("Expected %v to output a 16 digit number but got %d", registers, result[0])
 	}
 
 	// This program should output its middle register
 	registers = []int{104, 1125899906842624, 99}
-	result = ExecuteProgram(registers, []int{}, nil, nil, nil)
+	result, _ = ExecuteProgram(registers, []int{}, Channels{})
 	if !reflect.DeepEqual([]int{1125899906842624}, result) {
 		t.Errorf("Expected %v to output 1125899906842624 but got %d", registers, result)
 	}
 }
 
-func TestExtraTests(t *testing.T) {
+func TestAdditionalCases(t *testing.T) {
 	examples := []testCase{
 		// Test cases thanks to:
 		// https://www.reddit.com/r/adventofcode/comments/e8aw9j/2019_day_9_part_1_how_to_fix_203_error/fac3294/
@@ -201,10 +200,58 @@ func TestExtraTests(t *testing.T) {
 	}
 
 	for _, tc := range examples {
-		outputs := ExecuteProgram(tc.beforeRegisters, tc.inputs, nil, nil, nil)
+		outputs, _ := ExecuteProgram(tc.beforeRegisters, tc.inputs, Channels{})
 		if !(reflect.DeepEqual(outputs, tc.outputs)) {
 			t.Errorf("Expected to get outputs %v but got outputs %v", tc.outputs, outputs)
 		}
 	}
+}
 
+// Ensure that a clone is distinct from its parents
+func TestCloning(t *testing.T) {
+	cloneReq := make(chan bool)
+	cloneResp := make(chan *Computer)
+
+	bigBoss := make(chan int)
+	snake := make(chan int)
+
+	// Loop and output incrementing numbers
+	program := []int{
+		// Counter++
+		1, 11, 0, 11,
+		// Output counter
+		4, 11,
+		// Output another number to demonstrate pointer cloning
+		4, 101,
+		// Loop to the beginning
+		105, 1, -1,
+		// Counter
+		0}
+
+	go ExecuteProgram(program, nil, Channels{Output: bigBoss, CloneReq: cloneReq, CloneResp: cloneResp})
+
+	firstBigBoss := <-bigBoss
+	if firstBigBoss != 1 {
+		t.Errorf("Initial output should be 1 but was %d", firstBigBoss)
+	}
+
+	cloneReq <- true
+	snakeComp := <-cloneResp
+	snakeChans := Channels{Output: snake}
+	go snakeComp.ResumeExecution(snakeChans)
+
+	firstSnake := <-snake
+	if firstSnake != 0 {
+		t.Errorf("Expected first clone output to be 0 but was %d", firstSnake)
+	}
+
+	secondBigBoss := <-bigBoss
+	if secondBigBoss != 0 {
+		t.Errorf("Expected second parent output to be 0, but was %d", secondBigBoss)
+	}
+
+	secondSnake := <-snake
+	if secondSnake != 2 {
+		t.Errorf("Expected second clone output to be 2 but was %d", firstSnake)
+	}
 }

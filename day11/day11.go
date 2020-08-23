@@ -90,7 +90,7 @@ func paintTiles(program []int, startOnWhiteTile bool) map[Location]colour {
 	go func() {
 		defer wg.Done()
 		registers := utils.CopyInts(program)
-		intcode.ExecuteProgram(registers, []int{}, robotToProgram, programToRobot, nil)
+		intcode.ExecuteProgram(registers, []int{}, intcode.Channels{Input: robotToProgram, Output: programToRobot})
 	}()
 
 	// robot

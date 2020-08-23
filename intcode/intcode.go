@@ -29,32 +29,26 @@ func writeParams(opcode int) int {
 	}
 }
 
-type registerMap struct {
-	contents map[int]int
-}
+type registerMap map[int]int
 
-func new(registerArray []int) *registerMap {
-	rm := registerMap{map[int]int{}}
+func arrayToMap(registerArray []int) registerMap {
+	rm := registerMap{}
 	for i, n := range registerArray {
-		rm.contents[i] = n
+		rm[i] = n
 	}
-	return &rm
+	return rm
 }
 
-func (rm *registerMap) get(pos int) int {
-	if _, present := rm.contents[pos]; !present {
-		rm.contents[pos] = 0
+func (rm registerMap) get(pos int) int {
+	if _, present := rm[pos]; !present {
+		rm[pos] = 0
 	}
-	return rm.contents[pos]
-}
-
-func (rm *registerMap) set(pos, n int) {
-	rm.contents[pos] = n
+	return rm[pos]
 }
 
 // The value that should be returned by a function parameter depends on the
 // mode, which is derived from its position and the opcode.
-func getParams(registers *registerMap, pos, relativeBase int) []int {
+func getParams(registers registerMap, pos, relativeBase int) []int {
 	params := []int{}
 	opcode := registers.get(pos) % 100
 
@@ -98,85 +92,169 @@ func getParams(registers *registerMap, pos, relativeBase int) []int {
 	return params
 }
 
-// ExecuteProgram and return its output. Will modify registers.
-// inChan is used to find inputs where input has been depleted if it is not nil.
-// outChan is used to write outputs if not nil. All outputs are also returned as a slice.
-// statusChan is used to signal to other processes that this intcode computer is waiting for input
-func ExecuteProgram(registerArray []int, input []int, inChan <-chan int, outChan chan<- int, statusChan chan<- bool) []int {
-	if outChan != nil {
-		defer close(outChan)
+// Used to respond to clone requests with a copy of the current state of this computer
+func clone(this *Computer) *Computer {
+	newRegisters := make(map[int]int)
+	for k, v := range this.Registers {
+		newRegisters[k] = v
 	}
 
-	if statusChan != nil {
-		defer close(statusChan)
+	newInput := make([]int, len(this.Input))
+	copy(newInput, this.Input)
+
+	newOutput := make([]int, len(this.output))
+	copy(newOutput, this.output)
+
+	new := Computer{
+		Registers: newRegisters,
+		Input:     newInput,
+		Channels:  Channels{},
+
+		instrPtr:     this.instrPtr,
+		relativeBase: this.relativeBase,
+		output:       newOutput}
+
+	return &new
+}
+
+// Channels required for a computer, grouped together to tidy up args
+// All channels nillable, though the two clone channels depend on each other
+type Channels struct {
+	// Basic IO
+	Input  <-chan int
+	Output chan<- int
+	// Reports on
+	Status    chan<- bool
+	CloneReq  <-chan bool
+	CloneResp chan<- *Computer
+	Kill      <-chan bool
+}
+
+// Computer encapsulates the state of an intcode computer
+type Computer struct {
+	Registers registerMap
+	Input     []int
+	Channels  Channels
+
+	instrPtr     int
+	relativeBase int
+	output       []int
+}
+
+func closeOutChannels(comp *Computer) {
+	if comp.Channels.Output != nil {
+		close(comp.Channels.Output)
+	}
+	if comp.Channels.Status != nil {
+		close(comp.Channels.Status)
+	}
+}
+
+// Extra goroutine to handle cloning
+func cloneRoutine(comp *Computer, kill <-chan bool) {
+	for {
+		select {
+		case <-kill:
+			return
+		case <-comp.Channels.CloneReq:
+			comp.Channels.CloneResp <- clone(comp)
+		}
+	}
+}
+
+func cleanupCloner(cloneResp chan<- *Computer, killChan chan<- bool) {
+	killChan <- true
+	close(cloneResp)
+	close(killChan)
+}
+
+// Core computation loop
+func execute(comp *Computer) []int {
+	defer closeOutChannels(comp)
+
+	if comp.Channels.CloneReq != nil {
+		if comp.Channels.CloneResp == nil {
+			panic("Clone requests require clone responses!")
+		}
+
+		killChan := make(chan bool)
+		go cloneRoutine(comp, killChan)
+		defer cleanupCloner(comp.Channels.CloneResp, killChan)
 	}
 
-	registers := new(registerArray)
-
-	relativeBase := 0
-	i := 0
-	outputs := []int{}
-
-	for registers.get(i)%100 != 99 {
-		opcode := registers.get(i) % 100
-		params := getParams(registers, i, relativeBase)
+	for comp.Registers.get(comp.instrPtr)%100 != 99 {
+		opcode := comp.Registers.get(comp.instrPtr) % 100
+		params := getParams(comp.Registers, comp.instrPtr, comp.relativeBase)
 
 		switch opcode {
 		case 1:
-			registers.set(params[2], params[1]+params[0])
+			comp.Registers[params[2]] = params[1] + params[0]
 		case 2:
-			registers.set(params[2], params[1]*params[0])
+			comp.Registers[params[2]] = params[1] * params[0]
 		case 3:
-			if len(input) > 0 {
-				registers.set(params[0], input[0])
-				input = input[1:]
-			} else if inChan != nil {
-				if statusChan != nil {
-					statusChan <- true
+			if len(comp.Input) > 0 {
+				comp.Registers[params[0]] = comp.Input[0]
+				comp.Input = comp.Input[1:]
+			} else if comp.Channels.Input != nil {
+				if comp.Channels.Status != nil {
+					comp.Channels.Status <- true
 				}
-				registers.set(params[0], <-inChan)
+				comp.Registers[params[0]] = <-comp.Channels.Input
 			} else {
 				panic("No further input available")
 			}
 		case 4:
-			outputs = append(outputs, params[0])
-			if outChan != nil {
-				outChan <- params[0]
+			comp.output = append(comp.output, params[0])
+			if comp.Channels.Output != nil {
+				comp.Channels.Output <- params[0]
 			}
 		case 5:
 			if params[0] != 0 {
-				i = params[1]
+				comp.instrPtr = params[1]
 				continue
 			}
 		case 6:
 			if params[0] == 0 {
-				i = params[1]
+				comp.instrPtr = params[1]
 				continue
 			}
 		case 7:
 			if params[0] < params[1] {
-				registers.set(params[2], 1)
+				comp.Registers[params[2]] = 1
 			} else {
-				registers.set(params[2], 0)
+				comp.Registers[params[2]] = 0
 			}
 		case 8:
 			if params[0] == params[1] {
-				registers.set(params[2], 1)
+				comp.Registers[params[2]] = 1
 			} else {
-				registers.set(params[2], 0)
+				comp.Registers[params[2]] = 0
 			}
 		case 9:
-			relativeBase += params[0]
+			comp.relativeBase += params[0]
 		}
-
-		i += (len(params) + 1)
+		comp.instrPtr += (len(params) + 1)
 	}
 
-	// Need to modify the initial input slice to support legacy tests
-	// Could do with a refactor, but somehow I don't see that happening
-	for i := range registerArray {
-		registerArray[i] = registers.get(i)
-	}
+	return comp.output
+}
 
-	return outputs
+// ExecuteProgram from the beginning and return its output with the computer. Will modify registers.
+func ExecuteProgram(registers []int, input []int, channels Channels) ([]int, *Computer) {
+	instrPtr := 0
+	relativeBase := 0
+	outputs := []int{}
+
+	computer := Computer{arrayToMap(registers), input, channels, instrPtr, relativeBase, outputs}
+
+	return execute(&computer), &computer
+}
+
+// ResumeExecution for an existing intcode computer, attaching it to new channels
+// Preserves the current state of execution
+// This is used for testing multiple inputs from a given point in an intcode program
+func (comp *Computer) ResumeExecution(channels Channels) {
+	comp.Channels = channels
+
+	execute(comp)
 }

@@ -10,9 +10,9 @@ import (
 func main() {
 	registers := utils.GetCommaSeparatedInts("input.txt")
 
-	boost := intcode.ExecuteProgram(registers, []int{1}, nil, nil, nil)[0]
-	fmt.Printf("The answer to part one is %d\n", boost)
+	boost, _ := intcode.ExecuteProgram(registers, []int{1}, intcode.Channels{})
+	fmt.Printf("The answer to part one is %d\n", boost[0])
 
-	distressSignal := intcode.ExecuteProgram(registers, []int{2}, nil, nil, nil)[0]
-	fmt.Printf("The answer to part two is %d\n", distressSignal)
+	distressSignal, _ := intcode.ExecuteProgram(registers, []int{2}, intcode.Channels{})
+	fmt.Printf("The answer to part two is %d\n", distressSignal[0])
 }

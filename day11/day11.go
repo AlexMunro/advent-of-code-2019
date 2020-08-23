@@ -9,7 +9,9 @@ import (
 
 	"../intcode"
 	"../utils"
-	"../utils/location"
+
+	// I know what I'm doing, go-lint. Dot imports are fine.
+	. "../utils/location"
 	"golang.org/x/image/bmp"
 )
 
@@ -29,12 +31,12 @@ const (
 	left  direction = 3
 )
 
-func paintRobot(paintMap map[location.Location]colour, inChan <-chan int, outChan chan<- int) {
+func paintRobot(paintMap map[Location]colour, inChan <-chan int, outChan chan<- int) {
 	defer close(outChan)
 
 	// Alternate betwen even paint colours and odd directions
 	evenInstruction := true
-	position := location.Location{0, 0}
+	position := Location{X: 0, Y: 0}
 	orientation := up
 
 	if cameraColour, present := paintMap[position]; present {
@@ -54,13 +56,13 @@ func paintRobot(paintMap map[location.Location]colour, inChan <-chan int, outCha
 			}
 			switch orientation {
 			case up:
-				position = location.Location{position.X, position.Y + 1}
+				position = Location{X: position.X, Y: position.Y + 1}
 			case right:
-				position = location.Location{position.X + 1, position.Y}
+				position = Location{X: position.X + 1, Y: position.Y}
 			case down:
-				position = location.Location{position.X, position.Y - 1}
+				position = Location{X: position.X, Y: position.Y - 1}
 			case left:
-				position = location.Location{position.X - 1, position.Y}
+				position = Location{X: position.X - 1, Y: position.Y}
 			}
 
 			if cameraColour, present := paintMap[position]; present {
@@ -73,15 +75,15 @@ func paintRobot(paintMap map[location.Location]colour, inChan <-chan int, outCha
 	}
 }
 
-func paintTiles(program []int, startOnWhiteTile bool) map[location.Location]colour {
+func paintTiles(program []int, startOnWhiteTile bool) map[Location]colour {
 	var wg sync.WaitGroup
 	wg.Add(2)
 	programToRobot := make(chan int)
 	robotToProgram := make(chan int, 2)
 
-	paintMap := map[location.Location]colour{}
+	paintMap := map[Location]colour{}
 	if startOnWhiteTile {
-		paintMap[location.Location{0, 0}] = white
+		paintMap[Location{X: 0, Y: 0}] = white
 	}
 
 	// program
@@ -101,16 +103,16 @@ func paintTiles(program []int, startOnWhiteTile bool) map[location.Location]colo
 	return paintMap
 }
 
-func drawIdentifier(paintMap map[location.Location]colour, filename string) {
-	locSlice := []location.Location{}
+func drawIdentifier(paintMap map[Location]colour, filename string) {
+	locSlice := []Location{}
 	for loc := range paintMap {
 		locSlice = append(locSlice, loc)
 	}
 
-	minX := location.MinX(locSlice)
-	maxX := location.MaxX(locSlice)
-	minY := location.MinY(locSlice)
-	maxY := location.MaxY(locSlice)
+	minX := MinX(locSlice)
+	maxX := MaxX(locSlice)
+	minY := MinY(locSlice)
+	maxY := MaxY(locSlice)
 
 	drawing := image.NewRGBA(image.Rect(minX, minY, maxX+1, maxY+1))
 

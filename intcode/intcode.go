@@ -2,6 +2,8 @@ package intcode
 
 import (
 	"fmt"
+
+	"../utils"
 )
 
 func readParams(opcode int) int {
@@ -99,11 +101,8 @@ func clone(this *Computer) *Computer {
 		newRegisters[k] = v
 	}
 
-	newInput := make([]int, len(this.Input))
-	copy(newInput, this.Input)
-
-	newOutput := make([]int, len(this.output))
-	copy(newOutput, this.output)
+	newInput := utils.CopyInts(this.Input)
+	newOutput := utils.CopyInts(this.output)
 
 	new := Computer{
 		Registers: newRegisters,
@@ -197,16 +196,29 @@ func execute(comp *Computer) []int {
 				comp.Input = comp.Input[1:]
 			} else if comp.Channels.Input != nil {
 				if comp.Channels.Status != nil {
-					comp.Channels.Status <- true
+					select {
+					case comp.Channels.Status <- true:
+					case <-comp.Channels.Kill:
+						return comp.output
+					}
 				}
-				comp.Registers[params[0]] = <-comp.Channels.Input
+				select {
+				case input := <-comp.Channels.Input:
+					comp.Registers[params[0]] = input
+				case <-comp.Channels.Kill:
+					return comp.output
+				}
 			} else {
 				panic("No further input available")
 			}
 		case 4:
 			comp.output = append(comp.output, params[0])
 			if comp.Channels.Output != nil {
-				comp.Channels.Output <- params[0]
+				select {
+				case comp.Channels.Output <- params[0]:
+				case <-comp.Channels.Kill:
+					return comp.output
+				}
 			}
 		case 5:
 			if params[0] != 0 {
@@ -239,7 +251,7 @@ func execute(comp *Computer) []int {
 	return comp.output
 }
 
-// ExecuteProgram from the beginning and return its output with the computer. Will modify registers.
+// ExecuteProgram from the beginning and return its output with the computer
 func ExecuteProgram(registers []int, input []int, channels Channels) ([]int, *Computer) {
 	instrPtr := 0
 	relativeBase := 0

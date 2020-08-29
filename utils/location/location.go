@@ -1,7 +1,34 @@
 package location
 
+import "fmt"
+
 type Location struct {
 	X, Y int
+}
+
+type Direction = int
+
+const (
+	North Direction = 1
+	South Direction = 2
+	West  Direction = 3
+	East  Direction = 4
+)
+
+// Head in the given direction to return a new Location
+func (loc Location) Head(dir Direction) Location {
+	switch dir {
+	case North:
+		return Location{X: loc.X, Y: loc.Y + 1}
+	case South:
+		return Location{X: loc.X, Y: loc.Y - 1}
+	case East:
+		return Location{X: loc.X + 1, Y: loc.Y}
+	case West:
+		return Location{X: loc.X - 1, Y: loc.Y}
+	default:
+		panic(fmt.Sprintf("%d is not a known direction", dir))
+	}
 }
 
 func Gradient(l1, l2 Location) float64 {

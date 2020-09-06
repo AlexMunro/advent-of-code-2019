@@ -75,20 +75,16 @@ func MaxY(locations []Location) int {
 	return maxY
 }
 
-type LocationSet struct {
-	contents map[Location]struct{}
-}
+type LocationSet map[Location]struct{}
 
 func New(initial Location) *LocationSet {
 	ls := LocationSet{}
-	ls.contents = map[Location]struct{}{}
-	ls.contents[initial] = struct{}{}
+	ls[initial] = struct{}{}
 	return &ls
 }
 
 func NewEmptySet() *LocationSet {
 	ls := LocationSet{}
-	ls.contents = map[Location]struct{}{}
 	return &ls
 }
 
@@ -101,25 +97,25 @@ func FromSlice(locations []Location) *LocationSet {
 }
 
 func (ls *LocationSet) Contains(loc Location) bool {
-	_, contains := ls.contents[loc]
+	_, contains := (*ls)[loc]
 	return contains
 }
 
 func (ls *LocationSet) AddLoc(loc Location) {
-	ls.contents[loc] = struct{}{}
+	(*ls)[loc] = struct{}{}
 }
 
 func (ls *LocationSet) RemoveLoc(loc Location) {
-	delete(ls.contents, loc)
+	delete(*ls, loc)
 }
 
 func (ls *LocationSet) Size() int {
-	return len(ls.contents)
+	return len(*ls)
 }
 
 func (ls *LocationSet) ToSlice() []Location {
-	slice := make([]Location, 0, len(ls.contents))
-	for l := range ls.contents {
+	slice := make([]Location, 0, len(*ls))
+	for l := range *ls {
 		slice = append(slice, l)
 	}
 	return slice
@@ -127,14 +123,14 @@ func (ls *LocationSet) ToSlice() []Location {
 
 // Difference mutates the existing set
 func (ls *LocationSet) Difference(other *LocationSet) {
-	for l, _ := range other.contents {
+	for l := range *other {
 		ls.RemoveLoc(l)
 	}
 }
 
 func (ls *LocationSet) Filter(predicate func(Location) bool) []Location {
 	slice := []Location{}
-	for loc, _ := range ls.contents {
+	for loc := range *ls {
 		if predicate(loc) {
 			slice = append(slice, loc)
 		}

@@ -84,7 +84,7 @@ func visualise(maze map[Location]status, filename string) {
 	bmp.Encode(file, drawing)
 }
 
-func breadthFirstSearch(input []int) int {
+func breadthFirstSearch(input []int) (int, int) {
 	root := searchNode{
 		loc:      Location{X: 0, Y: 0},
 		depth:    0,
@@ -95,6 +95,9 @@ func breadthFirstSearch(input []int) int {
 	exploredNodes := map[Location]status{Location{X: 0, Y: 0}: moved}
 
 	nodes := []searchNode{root}
+
+	var firstAnswer int
+	var oxygenLoc Location
 
 	for len(nodes) > 0 {
 		for _, node := range nodes {
@@ -116,28 +119,60 @@ func breadthFirstSearch(input []int) int {
 				nextStatus := <-newChannels.output
 
 				exploredNodes[loc] = nextStatus
-				visualise(exploredNodes, "bfs.bmp")
+
+				nextNode := searchNode{
+					loc:      loc,
+					depth:    node.depth + 1,
+					channels: newChannels,
+				}
 
 				switch nextStatus {
 				case hitWall:
 					newChannels.kill <- true
 					continue
 				case moved:
-					nextNode := searchNode{
-						loc:      loc,
-						depth:    node.depth + 1,
-						channels: newChannels,
-					}
 					nodes = append(nodes, nextNode)
 				case goal:
-					return node.depth + 1
+					firstAnswer = node.depth + 1
+					oxygenLoc = loc
+					nodes = append(nodes, nextNode)
 				}
 			}
 			node.channels.kill <- true
 		}
 	}
 
-	panic("Solution not found")
+	visualise(exploredNodes, "bfs.bmp")
+
+	spread := New(oxygenLoc)
+	remaining := NewEmptySet()
+
+	spread.AddLoc(oxygenLoc)
+
+	for loc, status := range exploredNodes {
+		if status == moved {
+			remaining.AddLoc(loc)
+		}
+	}
+
+	minutesElapsed := 0
+
+	for remaining.Size() > 0 {
+		for _, loc := range spread.ToSlice() {
+			spread.RemoveLoc(loc)
+			for _, dir := range []Direction{North, South, West, East} {
+				nextLoc := loc.Head(dir)
+				if remaining.Contains(nextLoc) {
+					remaining.RemoveLoc(nextLoc)
+					spread.AddLoc(nextLoc)
+				}
+			}
+		}
+
+		minutesElapsed++
+	}
+
+	return firstAnswer, minutesElapsed
 }
 
 type encodedSearchNode = struct {
@@ -148,5 +183,7 @@ type encodedSearchNode = struct {
 
 func main() {
 	input := utils.GetCommaSeparatedInts("input.txt")
-	fmt.Printf("The answer to part one is %d\n", breadthFirstSearch(input))
+	firstAnswer, secondAnswer := breadthFirstSearch(input)
+	fmt.Printf("The answer to part one is %d\n", firstAnswer)
+	fmt.Printf("The answer to part two is %d\n", secondAnswer)
 }

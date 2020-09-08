@@ -11,6 +11,7 @@ type example struct {
 	input  []int
 	output []int
 	phases int
+	offset int
 }
 
 func TestPattern(t *testing.T) {
@@ -80,11 +81,60 @@ func TestMultiPhaseFFT(t *testing.T) {
 			output: []int{5, 2, 4, 3, 2, 1, 3, 3},
 			phases: 100,
 		},
+
+		example{
+			input:  []int{6, 9, 3, 1, 7, 1, 6, 3, 4, 9, 2, 9, 4, 8, 6, 0, 6, 3, 3, 5, 9, 9, 5, 9, 2, 4, 3, 1, 9, 8, 7, 3},
+			output: []int{5, 2, 4, 3, 2, 1, 3, 3},
+			phases: 100,
+		},
+		example{
+			input:  []int{6, 9, 3, 1, 7, 1, 6, 3, 4, 9, 2, 9, 4, 8, 6, 0, 6, 3, 3, 5, 9, 9, 5, 9, 2, 4, 3, 1, 9, 8, 7, 3},
+			output: []int{5, 2, 4, 3, 2, 1, 3, 3},
+			phases: 100,
+		},
+		example{
+			input:  []int{6, 9, 3, 1, 7, 1, 6, 3, 4, 9, 2, 9, 4, 8, 6, 0, 6, 3, 3, 5, 9, 9, 5, 9, 2, 4, 3, 1, 9, 8, 7, 3},
+			output: []int{5, 2, 4, 3, 2, 1, 3, 3},
+			phases: 100,
+		},
 	}
 
 	for _, example := range examples {
 		input := utils.CopyInts(example.input)
 		result := abbreviatedFFS(input, example.phases)
+		if !reflect.DeepEqual(result, example.output) {
+			t.Errorf("Expected to get %v from %v over %d phases, but got %v",
+				example.output, example.input, example.phases, result)
+		}
+	}
+}
+
+func TestParseInts(t *testing.T) {
+	signal := []int{1, 2, 3, 4, 5}
+	if parseInts(signal) != 12345 {
+		t.Errorf("Expected to get 12345 from %v but got %d", signal, parseInts(signal))
+	}
+}
+
+func TestFindMessage(t *testing.T) {
+	examples := []example{
+		example{
+			input:  []int{0, 3, 0, 3, 6, 7, 3, 2, 5, 7, 7, 2, 1, 2, 9, 4, 4, 0, 6, 3, 4, 9, 1, 5, 6, 5, 4, 7, 4, 6, 6, 4},
+			output: []int{8, 4, 4, 6, 2, 0, 2, 6},
+		},
+		example{
+			input:  []int{0, 2, 9, 3, 5, 1, 0, 9, 6, 9, 9, 9, 4, 0, 8, 0, 7, 4, 0, 7, 5, 8, 5, 4, 4, 7, 0, 3, 4, 3, 2, 3},
+			output: []int{7, 8, 7, 2, 5, 2, 7, 0},
+		},
+		example{
+			input:  []int{0, 3, 0, 8, 1, 7, 7, 0, 8, 8, 4, 9, 2, 1, 9, 5, 9, 7, 3, 1, 1, 6, 5, 4, 4, 6, 8, 5, 0, 5, 1, 7},
+			output: []int{5, 3, 5, 5, 3, 7, 3, 1},
+		},
+	}
+
+	for _, example := range examples {
+		input := utils.CopyInts(example.input)
+		result := findMessage(input)
 		if !reflect.DeepEqual(result, example.output) {
 			t.Errorf("Expected to get %v from %v over %d phases, but got %v",
 				example.output, example.input, example.phases, result)

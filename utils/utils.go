@@ -108,3 +108,14 @@ func Abs(n int) int {
 func CeilDiv(n, divisor int) int {
 	return int(math.Ceil(float64(n) / float64(divisor)))
 }
+
+// RepeatInts returns the given slice repeated n times
+func RepeatInts(xs []int, n int) []int {
+	xsRepeated := make([]int, n*len(xs))
+	for i := 0; i < n; i++ {
+		for j := 0; j < len(xs); j++ {
+			xsRepeated[i*len(xs)+j] = xs[j]
+		}
+	}
+	return xsRepeated
+}

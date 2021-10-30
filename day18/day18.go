@@ -16,16 +16,32 @@ type pathNode struct {
 }
 
 func (p pathNode) hash() string {
-	keyProduct := 1
+	encodedKeys := encodeKeys(p.visited)
 
-	for key := range p.visited {
+	return fmt.Sprint(p.position, '_', encodedKeys)
+}
+
+func (p *pathNode) getDistance() int {
+	return p.distance
+}
+
+func (p *pathNode) setIndex(i int) {
+	p.index = i
+}
+
+func encodeKeys(keys map[rune]struct{}) int {
+	encodedKeys := 0
+
+	for key := range keys {
 		if unicode.IsLower(key) {
-			keyProduct *= int(key)
+			position := int(key - 'a')
+			shiftedPosition := 1 << position
+			encodedKeys = encodedKeys | shiftedPosition
 		}
 	}
-
-	return fmt.Sprint(p.position, '_', keyProduct)
+	return encodedKeys
 }
+
 
 func keyCount(graph graph) int {
 	count := 0
@@ -40,7 +56,7 @@ func keyCount(graph graph) int {
 // Search the space of valid paths in lowest cumulative distance order
 // Returns as soon as a solution is found - this solution should be optimal
 func shortestPath(maze []string) int {
-	graph := buildGraph(maze)
+	graph := buildSimpleGraph(maze)
 	totalNodesToVisit := keyCount(graph)
 
 	initialNode := &pathNode{

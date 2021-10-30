@@ -6,25 +6,31 @@ import (
 
 type graph = map[rune]map[rune]int
 
-func findStartPoint(maze []string) Location {
+func findLandmark(maze []string, landmark rune) Location {
 	for y := 0; y < len(maze); y++ {
 		for x := 0; x < len(maze[y]); x++ {
-			if maze[y][x] == '@' {
+			if maze[y][x] == byte(landmark) {
 				return Location{X: x, Y: y}
 			}
 		}
 	}
-	panic("Could not find starting point in maze!")
+	panic("Could not find requested point in maze!")
 }
 
-func buildGraph(maze []string) graph {
+func buildSimpleGraph(maze []string) graph {
+	return buildGraph(maze, []rune{'@'})
+}
+
+func buildGraph(maze []string, startingPoints []rune) graph {
 	g := graph{}
 
-	locs := map[rune]Location{
-		'@': findStartPoint(maze),
+	locs := map[rune]Location{}
+
+	for _, p := range startingPoints {
+		locs[p] = findLandmark(maze, p)
 	}
 
-	verticesToVisit := []rune{'@'}
+	verticesToVisit := startingPoints
 	visitedVertices := map[rune]struct{}{}
 
 	for len(verticesToVisit) > 0 {

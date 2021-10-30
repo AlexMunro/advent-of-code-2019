@@ -3,9 +3,15 @@ package main
 import "container/heap"
 
 // Priority queue code mostly lifted from golang docs: https://golang.org/pkg/container/heap/
-type nodeQueue []*pathNode
 
-func newNodeQueue(initial *pathNode) *nodeQueue {
+type genericPathNode interface {
+	getDistance() int
+	setIndex(int)
+}
+
+type nodeQueue []genericPathNode
+
+func newNodeQueue(initial genericPathNode) *nodeQueue {
 	nodes := make(nodeQueue, 1)
 	nodes[0] = initial
 	heap.Init(&nodes)
@@ -17,19 +23,19 @@ func (nq nodeQueue) Len() int {
 }
 
 func (nq nodeQueue) Less(i, j int) bool {
-	return nq[i].distance < nq[j].distance
+	return nq[i].getDistance() < nq[j].getDistance()
 }
 
 func (nq nodeQueue) Swap(i, j int) {
 	nq[i], nq[j] = nq[j], nq[i]
-	nq[i].index = i
-	nq[j].index = j
+	nq[i].setIndex(i)
+	nq[j].setIndex(j)
 }
 
 func (nq *nodeQueue) Push(x interface{}) {
 	n := len(*nq)
-	node := x.(*pathNode)
-	node.index = n
+	node := x.(genericPathNode)
+	node.setIndex(n)
 	*nq = append(*nq, node)
 }
 
@@ -38,7 +44,7 @@ func (nq *nodeQueue) Pop() interface{} {
 	n := len(old)
 	node := old[n-1]
 	old[n-1] = nil
-	node.index = -1
+	node.setIndex(-1)
 	*nq = old[0 : n-1]
 	return node
 }

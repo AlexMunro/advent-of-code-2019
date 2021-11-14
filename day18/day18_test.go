@@ -74,16 +74,78 @@ func TestShortestPath(t *testing.T) {
 	}
 }
 
+func TestShortestQuadPath(t *testing.T) {
+	examples := []example{
+		example{
+			maze: []string{
+				"#######",
+				"#a.#Cd#",
+				"##...##",
+				"##.@.##",
+				"##...##",
+				"#cB#Ab#",
+				"#######",
+			},
+			shortestPathLength: 8,
+		},
+		example{
+			maze: []string{
+				"###############",
+				"#d.ABC.#.....a#",
+				"######.#.######",
+				"#######@#######",
+				"######.#.######",
+				"#b.....#.....c#",
+				"###############",
+			},
+			shortestPathLength: 24,
+		},
+		example{
+			maze: []string{
+				"#############",
+				"#DcBa.#.GhKl#",
+				"#.###...#I###",
+				"#e#d#.@.#j#k#",
+				"###C#...###J#",
+				"#fEbA.#.FgHi#",
+				"#############",
+			},
+			shortestPathLength: 32,
+		},
+		example{
+			maze: []string{
+				"#############",
+				"#g#f.D#..h#l#",
+				"#F###e#E###.#",
+				"#dCba.#.BcIJ#",
+				"#####.@.#####",
+				"#nK.L.#.G...#",
+				"#M###N#H###.#",
+				"#o#m..#i#jk.#",
+				"#############",
+			},
+			shortestPathLength: 72,
+		},
+	}
+
+	for _, example := range examples {
+		actual := shortestQuadPath(example.maze)
+		if example.shortestPathLength != actual {
+			t.Errorf("Expected maze to have length %d but had length %d\n", example.shortestPathLength, actual)
+		}
+	}
+}
+
 type encodeExample struct {
-	keys     map[rune]struct{}
+	keys     runeset
 	encoding int
 }
 
 func TestEncodeKeys(t *testing.T) {
 	examples := []encodeExample{
-		encodeExample{keys: map[rune]struct{}{'a': struct{}{}}, encoding: 0b1},
-		encodeExample{keys: map[rune]struct{}{'a': struct{}{}, 'c': struct{}{}}, encoding: 0b101},
-		encodeExample{keys: map[rune]struct{}{'a': struct{}{}, 'e': struct{}{}}, encoding: 0b10001},
+		encodeExample{keys: runeset{'a': struct{}{}}, encoding: 0b1},
+		encodeExample{keys: runeset{'a': struct{}{}, 'c': struct{}{}}, encoding: 0b101},
+		encodeExample{keys: runeset{'a': struct{}{}, 'e': struct{}{}}, encoding: 0b10001},
 	}
 
 	for _, example := range examples {

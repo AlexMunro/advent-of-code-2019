@@ -181,3 +181,49 @@ func TestBuildSimpleGraph(t *testing.T) {
 		}
 	}
 }
+
+func TestBuildQuarterGraphs(t *testing.T) {
+	examples := []graphExample{
+		graphExample{
+			maze: []string{
+				"#######",
+				"#a.#Cd#",
+				"##...##",
+				"##.@.##",
+				"##...##",
+				"#cB#Ab#",
+				"#######",
+			},
+			graph: graph{
+				'a': {'0': 2}, '0': {'a': 2},
+				'1': {'C': 1}, 'C': {'1': 1, 'd': 1}, 'd': {'C': 1},
+				'2': {'B': 1}, 'B': {'2': 1, 'c': 1}, 'c': {'B': 1},
+				'3': {'A': 1}, 'A': {'3': 1, 'b': 1}, 'b': {'A': 1},
+			},
+		},
+		graphExample{
+			maze: []string{
+				"###############",
+				"#d.ABC.#.....a#",
+				"######.#.######",
+				"#######@#######",
+				"######..#######",
+				"#b.....#.....c#",
+				"###############",
+			},
+			graph: graph{
+				'0': {'C': 2}, 'C': {'0': 2, 'B': 1}, 'B': {'C': 1, 'A': 1}, 'A': {'B': 1, 'd': 2}, 'd': {'A': 2},
+				'1': {'a': 6}, 'a': {'1': 6},
+				'2': {'b': 6}, 'b': {'2': 6},
+				'3': {'c': 6}, 'c': {'3': 6},
+			},
+		},
+	}
+
+	for _, example := range examples {
+		if !reflect.DeepEqual(buildQuarterGraphs(example.maze), example.graph) {
+			t.Errorf("Expected quartered graph to be %v but was %v", example.graph, buildQuarterGraphs(example.maze))
+		}
+	}
+
+}

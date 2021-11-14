@@ -31,7 +31,7 @@ func buildGraph(maze []string, startingPoints []rune) graph {
 	}
 
 	verticesToVisit := startingPoints
-	visitedVertices := map[rune]struct{}{}
+	visitedVertices := runeset{}
 
 	for len(verticesToVisit) > 0 {
 		// BFS from each node to immediate neighbours
@@ -84,4 +84,33 @@ func buildGraph(maze []string, startingPoints []rune) graph {
 	}
 
 	return g
+}
+
+func buildQuarterGraphs(maze []string) graph {
+	// We will then build a graph as before, but sever the links between the robots
+	centre := findLandmark(maze, '@')
+
+	upperRobotLine := []rune(maze[centre.Y-1])
+	interRobotLine := []rune(maze[centre.Y])
+	lowerRobotLine := []rune(maze[centre.Y+1])
+
+	upperRobotLine[centre.X-1] = '0'
+	upperRobotLine[centre.X] = '#'
+	upperRobotLine[centre.X+1] = '1'
+
+	interRobotLine[centre.X-1] = '#'
+	interRobotLine[centre.X] = '#'
+	interRobotLine[centre.X+1] = '#'
+
+	lowerRobotLine[centre.X-1] = '2'
+	lowerRobotLine[centre.X] = '#'
+	lowerRobotLine[centre.X+1] = '3'
+
+	maze[centre.Y-1] = string(upperRobotLine)
+	maze[centre.Y] = string(interRobotLine)
+	maze[centre.Y+1] = string(lowerRobotLine)
+
+	graph := buildGraph(maze, []rune{'0', '1', '2', '3'})
+
+	return graph
 }

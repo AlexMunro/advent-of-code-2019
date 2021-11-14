@@ -5,43 +5,17 @@ import (
 	"unicode"
 
 	"../utils"
+	"../utils/priorityqueue"
 )
 
-type pathNode struct {
-	position rune
-	distance int
-	visited  map[rune]struct{}
-	keyCount int
-	index    int // used by container/heap
-}
+type runeset map[rune]struct{}
 
-func (p pathNode) hash() string {
-	encodedKeys := encodeKeys(p.visited)
-
-	return fmt.Sprint(p.position, '_', encodedKeys)
-}
-
-func (p *pathNode) getDistance() int {
-	return p.distance
-}
-
-func (p *pathNode) setIndex(i int) {
-	p.index = i
-}
-
-func encodeKeys(keys map[rune]struct{}) int {
-	encodedKeys := 0
-
-	for key := range keys {
-		if unicode.IsLower(key) {
-			position := int(key - 'a')
-			shiftedPosition := 1 << position
-			encodedKeys = encodedKeys | shiftedPosition
-		}
+func contains(rs runeset, r rune) bool {
+	if _, present := rs[r]; present {
+		return true
 	}
-	return encodedKeys
+	return false
 }
-
 
 func keyCount(graph graph) int {
 	count := 0
@@ -62,11 +36,11 @@ func shortestPath(maze []string) int {
 	initialNode := &pathNode{
 		position: '@',
 		distance: 0,
-		visited:  map[rune]struct{}{'@': struct{}{}},
+		visited:  runeset{'@': struct{}{}},
 		keyCount: 0,
 	}
 
-	frontier := newNodeQueue(initialNode)
+	frontier := priorityqueue.New(initialNode)
 
 	// Prune our search
 	previouslyConsidered := map[string]int{
@@ -74,7 +48,7 @@ func shortestPath(maze []string) int {
 	}
 
 	for frontier.Len() > 0 {
-		currentNode := frontier.next().(*pathNode)
+		currentNode := frontier.Next().(*pathNode)
 		if totalNodesToVisit == currentNode.keyCount {
 			return currentNode.distance
 		}
@@ -83,7 +57,7 @@ func shortestPath(maze []string) int {
 		for neighbour, distance := range graph[currentNode.position] {
 			var newNode *pathNode
 
-			if _, present := currentNode.visited[neighbour]; present {
+			if contains(currentNode.visited, neighbour) {
 				newNode = &pathNode{
 					position: neighbour,
 					distance: currentNode.distance + distance,
@@ -98,7 +72,7 @@ func shortestPath(maze []string) int {
 					}
 				}
 
-				newVisitedNodes := map[rune]struct{}{}
+				newVisitedNodes := runeset{}
 				for k := range currentNode.visited {
 					newVisitedNodes[k] = struct{}{}
 				}
@@ -126,7 +100,102 @@ func shortestPath(maze []string) int {
 
 			previouslyConsidered[newNode.hash()] = newNode.distance
 
-			frontier.add(newNode)
+			frontier.Add(newNode)
+		}
+	}
+
+	panic("Failed to find a solution")
+}
+
+// Search as above with four robots instead of one!
+func shortestQuadPath(maze []string) int {
+	graph := buildQuarterGraphs(maze)
+	totalNodesToVisit := keyCount(graph)
+
+	initialNode := &quadPathNode{
+		positions: []rune{'0', '1', '2', '3'},
+		distance:  0,
+		visited: runeset{
+			'0': struct{}{},
+			'1': struct{}{},
+			'2': struct{}{},
+			'3': struct{}{},
+		},
+		keyCount: 0,
+	}
+
+	frontier := priorityqueue.New(initialNode)
+
+	previouslyConsidered := map[string]int{
+		initialNode.hash(): 0,
+	}
+
+	for frontier.Len() > 0 {
+		currentNode := frontier.Next().(*quadPathNode)
+
+		if previousDistance, present := previouslyConsidered[currentNode.hash()]; present {
+			if previousDistance < currentNode.distance {
+				continue
+			}
+		}
+
+		if totalNodesToVisit == currentNode.keyCount {
+			return currentNode.distance
+		}
+
+		// Generate new nodes for all immediate neighbours
+		for index := range [4]int{} {
+			for neighbour, distance := range graph[currentNode.positions[index]] {
+				var newNode *quadPathNode
+				neighbourPositions := make([]rune, len(currentNode.positions))
+				copy(neighbourPositions, currentNode.positions)
+				neighbourPositions[index] = neighbour
+
+				if _, present := currentNode.visited[neighbour]; present {
+					newNode = &quadPathNode{
+						positions: neighbourPositions,
+						distance:  currentNode.distance + distance,
+						visited:   currentNode.visited,
+						keyCount:  currentNode.keyCount,
+					}
+				} else {
+					// Skip doors we can't open yet
+					if unicode.IsUpper(neighbour) {
+						if _, present := currentNode.visited[unicode.ToLower(neighbour)]; !present {
+							continue
+						}
+					}
+
+					newVisitedNodes := runeset{}
+					for k := range currentNode.visited {
+						newVisitedNodes[k] = struct{}{}
+					}
+					newVisitedNodes[neighbour] = struct{}{}
+
+					newKeyCount := currentNode.keyCount
+					if unicode.IsLower(neighbour) {
+						newKeyCount++
+					}
+
+					newNode = &quadPathNode{
+						positions: neighbourPositions,
+						distance:  currentNode.distance + distance,
+						visited:   newVisitedNodes,
+						keyCount:  newKeyCount,
+					}
+				}
+
+				// Prune backtracking branches of search where there are no new keys
+				if prevDist, present := previouslyConsidered[newNode.hash()]; present {
+					if prevDist <= newNode.distance {
+						continue
+					}
+				}
+
+				previouslyConsidered[newNode.hash()] = newNode.distance
+
+				frontier.Add(newNode)
+			}
 		}
 	}
 
@@ -137,4 +206,5 @@ func main() {
 	input := utils.GetInputLines("input.txt")
 
 	fmt.Printf("The answer to part one is %v\n", shortestPath(input))
+	fmt.Printf("The answer to part two is %v\n", shortestQuadPath(input))
 }

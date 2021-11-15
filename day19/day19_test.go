@@ -1,27 +1,29 @@
 package main
 
-import "testing"
+import (
+	"testing"
+)
 
 type mockChecker struct {
-	grid [][]int
+	grid [][]bool
 }
 
-func (m mockChecker) check(x int, y int) int {
-	return m.grid[y][x]
+func (m mockChecker) check(x int, y int) bool {
+	return m.grid[x][y]
 }
 
 func buildMockChecker(lines []string) mockChecker {
-	grid := make([][]int, len(lines[0]))
+	grid := make([][]bool, len(lines[0]))
 	for i := range grid {
-		grid[i] = make([]int, len(lines))
+		grid[i] = make([]bool, len(lines))
 	}
 
 	for y := 0; y < len(lines); y++ {
 		for x := 0; x < len(lines[y]); x++ {
 			if lines[y][x] == '.' {
-				grid[x][y] = 0
+				grid[x][y] = false
 			} else {
-				grid[x][y] = 1
+				grid[x][y] = true
 			}
 		}
 	}
@@ -97,7 +99,7 @@ func TestNearestTractorBeamSquare(t *testing.T) {
 	expectedX := 25
 	expectedY := 20
 
-	actualX, actualY := nearestTractorBeamSquare(checker)
+	actualX, actualY := nearestTractorBeamSquare(checker, 10)
 
 	if expectedX != actualX || expectedY != actualY {
 		t.Errorf("Expected (%v, %v) but got (%v, %v)", expectedX, expectedY, actualX, actualY)

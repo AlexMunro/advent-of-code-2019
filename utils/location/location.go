@@ -9,11 +9,20 @@ type Location struct {
 type Direction = int
 
 const (
+	// not using iota here because day15 depends on 1-indexing
 	North Direction = 1
 	South Direction = 2
 	West  Direction = 3
 	East  Direction = 4
 )
+
+func (loc Location) AdjacentLocations() [4]Location {
+	var locations [4]Location
+	for i, dir := range []Direction{North, South, West, East} {
+		locations[i] = loc.Head(dir)
+	}
+	return locations
+}
 
 // Head in the given direction to return a new Location
 func (loc Location) Head(dir Direction) Location {
@@ -119,6 +128,10 @@ func (ls *LocationSet) ToSlice() []Location {
 		slice = append(slice, l)
 	}
 	return slice
+}
+
+func (ls *LocationSet) Clone() *LocationSet {
+	return FromSlice(ls.ToSlice())
 }
 
 // Difference mutates the existing set

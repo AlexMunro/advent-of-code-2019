@@ -160,8 +160,7 @@ func breadthFirstSearch(input []int) (int, int) {
 	for remaining.Size() > 0 {
 		for _, loc := range spread.ToSlice() {
 			spread.RemoveLoc(loc)
-			for _, dir := range []Direction{North, South, West, East} {
-				nextLoc := loc.Head(dir)
+			for _, nextLoc := range loc.AdjacentLocations() {
 				if remaining.Contains(nextLoc) {
 					remaining.RemoveLoc(nextLoc)
 					spread.AddLoc(nextLoc)

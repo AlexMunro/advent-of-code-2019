@@ -51,8 +51,7 @@ func buildGraph(maze []string, startingPoints []rune) graph {
 					}
 					exploredLocs[currentLoc] = struct{}{}
 
-					for _, dir := range []Direction{North, South, West, East} {
-						nextLoc := currentLoc.Head(dir)
+					for _, nextLoc := range currentLoc.AdjacentLocations() {
 						if nextLoc == locs[vertex] {
 							continue
 						}
